@@ -24,8 +24,30 @@ export function setBaseUrl() {
 
 // Create Express app
 const app = express();
-app.use(cors());
+
+// Enhanced CORS configuration for ElevenLabs
+app.use(cors({
+  origin: true, // Allow all origins
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Add request logging for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Handle preflight requests
+app.options('/mcp', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.status(200).end();
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -36,8 +58,27 @@ app.get('/health', (req, res) => {
   });
 });
 
+// GET endpoint for /mcp (for debugging)
+app.get('/mcp', (req, res) => {
+  res.status(200).json({
+    message: 'Square MCP Server is running',
+    instructions: 'This endpoint only accepts POST requests with JSON-RPC 2.0 payloads',
+    available_methods: ['initialize', 'tools/list', 'tools/call'],
+    server_info: {
+      name: 'square-mcp-server',
+      version: '1.0.0'
+    }
+  });
+});
+
 // MCP-compatible endpoint for ElevenLabs
 app.post('/mcp', async (req: any, res: any) => {
+  // Set headers for ElevenLabs compatibility
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.header('Content-Type', 'application/json');
+  
   try {
     const { jsonrpc, method, params, id } = req.body;
 
