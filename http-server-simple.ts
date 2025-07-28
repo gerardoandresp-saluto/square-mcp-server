@@ -74,27 +74,62 @@ app.post('/mcp', async (req: any, res: any) => {
           result: {
             tools: [
               {
-                name: 'make_api_request',
-                description: 'Unified tool for all Square API operations. Available services: locations, customers, catalog, payments, orders, and more.',
+                name: 'get_service_info',
+                description: 'Discover methods available for a Square API service. Use this to explore what operations are available for a specific service like locations, customers, catalog, etc.',
                 inputSchema: {
                   type: 'object',
                   properties: {
-                    service: { type: 'string', description: 'The Square API service category (e.g., "catalog", "payments")' },
-                    method: { type: 'string', description: 'The API method to call (e.g., "list", "create")' },
-                    request: { type: 'object', description: 'The request object for the API call.' }
+                    service: { 
+                      type: 'string', 
+                      description: 'The Square API service category (e.g., "locations", "customers", "catalog", "payments", "orders")',
+                      enum: ['locations', 'customers', 'catalog', 'payments', 'orders', 'inventory', 'giftcards', 'loyalty', 'bookings', 'devices', 'disputes', 'invoices', 'labor', 'merchants', 'payouts', 'refunds', 'subscriptions', 'team', 'terminal', 'vendors', 'webhooksubscriptions']
+                    }
+                  },
+                  required: ['service']
+                }
+              },
+              {
+                name: 'get_type_info',
+                description: 'Get detailed parameter requirements for a specific Square API method. Use this to understand what parameters are needed for an API call.',
+                inputSchema: {
+                  type: 'object',
+                  properties: {
+                    service: { 
+                      type: 'string', 
+                      description: 'The Square API service category',
+                      enum: ['locations', 'customers', 'catalog', 'payments', 'orders', 'inventory', 'giftcards', 'loyalty', 'bookings', 'devices', 'disputes', 'invoices', 'labor', 'merchants', 'payouts', 'refunds', 'subscriptions', 'team', 'terminal', 'vendors', 'webhooksubscriptions']
+                    },
+                    method: { 
+                      type: 'string', 
+                      description: 'The API method to get info for (e.g., "list", "create", "get", "update", "delete")',
+                      enum: ['list', 'get', 'create', 'update', 'delete']
+                    }
                   },
                   required: ['service', 'method']
                 }
               },
               {
-                name: 'get_service_info',
-                description: 'Get information about a Square API service.',
+                name: 'make_api_request',
+                description: 'Execute API calls to Square. Use this to perform actual operations like listing locations, creating customers, processing payments, etc.',
                 inputSchema: {
                   type: 'object',
                   properties: {
-                    service: { type: 'string', description: 'The Square API service category' }
+                    service: { 
+                      type: 'string', 
+                      description: 'The Square API service category (e.g., "locations", "customers", "catalog", "payments")',
+                      enum: ['locations', 'customers', 'catalog', 'payments', 'orders', 'inventory', 'giftcards', 'loyalty', 'bookings', 'devices', 'disputes', 'invoices', 'labor', 'merchants', 'payouts', 'refunds', 'subscriptions', 'team', 'terminal', 'vendors', 'webhooksubscriptions']
+                    },
+                    method: { 
+                      type: 'string', 
+                      description: 'The API method to call (e.g., "list", "create", "get", "update", "delete")',
+                      enum: ['list', 'get', 'create', 'update', 'delete']
+                    },
+                    request: { 
+                      type: 'object', 
+                      description: 'The request object for the API call. Required for POST/PUT operations, optional for GET operations.' 
+                    }
                   },
-                  required: ['service']
+                  required: ['service', 'method']
                 }
               }
             ]
@@ -224,6 +259,45 @@ app.post('/mcp', async (req: any, res: any) => {
               
               result = {
                 content: [{ type: 'text', text: JSON.stringify(serviceInfo, null, 2) }]
+              };
+              break;
+
+            case 'get_type_info':
+              const { service: typeService, method: typeMethod } = args;
+              
+              // Define parameter information for different services and methods
+              const typeInfo = {
+                service: typeService,
+                method: typeMethod,
+                description: `Parameters for ${typeService} ${typeMethod} operation`,
+                parameters: {
+                  // Common parameters for most operations
+                  ...(typeMethod === 'list' && {
+                    limit: { type: 'number', description: 'Maximum number of items to return', optional: true },
+                    cursor: { type: 'string', description: 'Pagination cursor', optional: true }
+                  }),
+                  ...(typeMethod === 'get' && {
+                    id: { type: 'string', description: 'ID of the item to retrieve', required: true }
+                  }),
+                  ...(typeMethod === 'create' && {
+                    body: { type: 'object', description: 'Data for creating the item', required: true }
+                  }),
+                  ...(typeMethod === 'update' && {
+                    id: { type: 'string', description: 'ID of the item to update', required: true },
+                    body: { type: 'object', description: 'Data for updating the item', required: true }
+                  }),
+                  ...(typeMethod === 'delete' && {
+                    id: { type: 'string', description: 'ID of the item to delete', required: true }
+                  })
+                },
+                http_method: typeMethod === 'list' || typeMethod === 'get' ? 'GET' : 
+                             typeMethod === 'create' ? 'POST' : 
+                             typeMethod === 'update' ? 'PUT' : 'DELETE',
+                endpoint: `/v2/${typeService.toLowerCase()}`
+              };
+              
+              result = {
+                content: [{ type: 'text', text: JSON.stringify(typeInfo, null, 2) }]
               };
               break;
 
