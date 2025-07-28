@@ -4,6 +4,9 @@ FROM node:18
 # Set working directory
 WORKDIR /app
 
+# Update npm to latest version
+RUN npm install -g npm@latest
+
 # Copy package files
 COPY package*.json ./
 
@@ -15,9 +18,6 @@ COPY . .
 
 # Build the application
 RUN npm run build
-
-# Remove dev dependencies to reduce image size
-RUN npm prune --production
 
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
