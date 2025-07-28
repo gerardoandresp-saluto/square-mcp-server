@@ -115,13 +115,52 @@ app.post('/mcp', async (req: any, res: any) => {
               const token = await getAccessToken();
               const baseUrl = setBaseUrl();
               
-              // Build the API URL
-              const servicePath = service.toLowerCase();
-              const url = `${baseUrl}/v2/${servicePath}`;
+              // Map service names to correct Square API endpoints
+              const serviceEndpoints: { [key: string]: string } = {
+                'locations': '/v2/locations',
+                'customers': '/v2/customers',
+                'catalog': '/v2/catalog',
+                'payments': '/v2/payments',
+                'orders': '/v2/orders',
+                'inventory': '/v2/inventory',
+                'giftcards': '/v2/gift-cards',
+                'loyalty': '/v2/loyalty',
+                'bookings': '/v2/bookings',
+                'devices': '/v2/devices',
+                'disputes': '/v2/disputes',
+                'invoices': '/v2/invoices',
+                'labor': '/v2/labor',
+                'merchants': '/v2/merchants',
+                'payouts': '/v2/payouts',
+                'refunds': '/v2/refunds',
+                'subscriptions': '/v2/subscriptions',
+                'team': '/v2/team',
+                'terminal': '/v2/terminal',
+                'vendors': '/v2/vendors',
+                'webhooksubscriptions': '/v2/webhook-subscriptions'
+              };
+              
+              const endpoint = serviceEndpoints[service.toLowerCase()];
+              if (!endpoint) {
+                throw new Error(`Unsupported service: ${service}. Available services: ${Object.keys(serviceEndpoints).join(', ')}`);
+              }
+              
+              const url = `${baseUrl}${endpoint}`;
+              
+              // Map common methods to correct HTTP methods for Square API
+              const methodMap: { [key: string]: string } = {
+                'list': 'GET',
+                'get': 'GET',
+                'create': 'POST',
+                'update': 'PUT',
+                'delete': 'DELETE'
+              };
+              
+              const httpMethod = methodMap[method.toLowerCase()] || method.toUpperCase();
               
               // Make the API request
               const response = await fetch(url, {
-                method: method.toUpperCase(),
+                method: httpMethod,
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
@@ -129,7 +168,7 @@ app.post('/mcp', async (req: any, res: any) => {
                   'Square-Version': '2025-04-16',
                   'User-Agent': 'Square-MCP-Server/1.0.0'
                 },
-                ...(request && { body: JSON.stringify(request) })
+                ...(request && ['POST', 'PUT', 'PATCH'].includes(httpMethod) && { body: JSON.stringify(request) })
               });
               
               const responseText = await response.text();
@@ -146,11 +185,41 @@ app.post('/mcp', async (req: any, res: any) => {
             case 'get_service_info':
               const { service: infoService } = args;
               
+              // Map service names to correct Square API endpoints
+              const serviceEndpointsInfo: { [key: string]: string } = {
+                'locations': '/v2/locations',
+                'customers': '/v2/customers',
+                'catalog': '/v2/catalog',
+                'payments': '/v2/payments',
+                'orders': '/v2/orders',
+                'inventory': '/v2/inventory',
+                'giftcards': '/v2/gift-cards',
+                'loyalty': '/v2/loyalty',
+                'bookings': '/v2/bookings',
+                'devices': '/v2/devices',
+                'disputes': '/v2/disputes',
+                'invoices': '/v2/invoices',
+                'labor': '/v2/labor',
+                'merchants': '/v2/merchants',
+                'payouts': '/v2/payouts',
+                'refunds': '/v2/refunds',
+                'subscriptions': '/v2/subscriptions',
+                'team': '/v2/team',
+                'terminal': '/v2/terminal',
+                'vendors': '/v2/vendors',
+                'webhooksubscriptions': '/v2/webhook-subscriptions'
+              };
+              
+              const infoEndpoint = serviceEndpointsInfo[infoService.toLowerCase()];
+              if (!infoEndpoint) {
+                throw new Error(`Unsupported service: ${infoService}. Available services: ${Object.keys(serviceEndpointsInfo).join(', ')}`);
+              }
+              
               // Return basic service information
               const serviceInfo = {
                 description: `Square API ${infoService} service`,
                 available_methods: ['list', 'get', 'create', 'update', 'delete'],
-                endpoint: `/v2/${infoService.toLowerCase()}`
+                endpoint: infoEndpoint
               };
               
               result = {
