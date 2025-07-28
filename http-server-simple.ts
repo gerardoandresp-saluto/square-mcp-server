@@ -116,11 +116,12 @@ app.post('/mcp', async (req: any, res: any) => {
 
     switch (method) {
       case 'initialize':
+        console.log('Handling initialize request');
         // Return MCP server capabilities
         return res.json({
           jsonrpc: '2.0',
           result: {
-            protocolVersion: '2024-11-05',
+            protocolVersion: '2025-03-26', // Updated to match ElevenLabs
             capabilities: {
               tools: {}
             },
@@ -129,6 +130,32 @@ app.post('/mcp', async (req: any, res: any) => {
               version: '1.0.0'
             }
           },
+          id
+        });
+
+      case 'notifications/initialized':
+        console.log('Handling notifications/initialized request');
+        // Handle notification - just acknowledge it
+        return res.json({
+          jsonrpc: '2.0',
+          result: null,
+          id: req.body.id || null
+        });
+
+      case 'notifications/exit':
+        console.log('Handling notifications/exit request');
+        // Handle exit notification
+        return res.json({
+          jsonrpc: '2.0',
+          result: null,
+          id: req.body.id || null
+        });
+
+      case 'ping':
+        console.log('Handling ping request');
+        return res.json({
+          jsonrpc: '2.0',
+          result: { pong: true },
           id
         });
 
