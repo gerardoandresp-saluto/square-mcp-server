@@ -5,6 +5,10 @@
   "license": "APACHE-2.0",
   "author": "Block, Inc",
   "type": "module",
+  "engines": {
+    "node": ">=20.17.0",
+    "npm": ">=10.0.0"
+  },
   "bin": {
     "square-mcp-server": "dist/index.js"
   },
@@ -37,7 +41,7 @@
     "@types/escape-html": "^1.0.4",
     "@types/express": "^5.0.0",
     "@types/form-data": "^2.5.0",
-    "@types/node": "^22",
+    "@types/node": "^20",
     "@types/node-fetch": "^2.6.11",
     "@types/yargs": "^17.0.33",
     "shx": "^0.3.4",

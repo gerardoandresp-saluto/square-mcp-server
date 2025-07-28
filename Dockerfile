@@ -1,11 +1,8 @@
-# Use Node.js 18 for better compatibility
-FROM node:18
+# Use Node.js 20.17 for better compatibility
+FROM node:20.17
 
 # Set working directory
 WORKDIR /app
-
-# Update npm to latest version
-RUN npm install -g npm@latest
 
 # Copy package files
 COPY package*.json ./
