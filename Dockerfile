@@ -1,14 +1,23 @@
 # Use Node.js 20.17 for better compatibility
-FROM node:20.17
+FROM node:20.17-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Install necessary build tools
+RUN apk add --no-cache python3 make g++
+
+# Set npm configuration for better reliability
+ENV NPM_CONFIG_LOGLEVEL=warn
+ENV NPM_CONFIG_CACHE=/tmp/.npm
+ENV NODE_ENV=production
+
+# Copy package files first
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with explicit flags and retry logic
+RUN npm install --no-audit --no-fund --prefer-offline --production=false || \
+    (npm cache clean --force && npm install --no-audit --no-fund --prefer-offline --production=false)
 
 # Copy source code
 COPY . .
@@ -16,8 +25,14 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Clean up npm cache and development dependencies
+RUN npm cache clean --force
+RUN npm prune --production
+RUN rm -rf /tmp/.npm
+
 # Create non-root user for security
-RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
 # Change ownership of the app directory
 RUN chown -R nodejs:nodejs /app
