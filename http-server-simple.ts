@@ -79,13 +79,37 @@ app.post('/mcp', async (req: any, res: any) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.header('Content-Type', 'application/json');
   
+  // Log the incoming request for debugging
+  console.log('Incoming request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { jsonrpc, method, params, id } = req.body;
 
-    if (jsonrpc !== '2.0') {
+    // More flexible JSON-RPC validation
+    if (!req.body || typeof req.body !== 'object') {
+      console.log('Error: Invalid request body');
       return res.status(400).json({
         jsonrpc: '2.0',
-        error: { code: -32600, message: 'Invalid Request' },
+        error: { code: -32600, message: 'Invalid Request: Missing or invalid request body' },
+        id: req.body?.id || null
+      });
+    }
+
+    // Handle requests without jsonrpc field (some clients don't send it)
+    if (jsonrpc && jsonrpc !== '2.0') {
+      console.log('Error: Invalid jsonrpc version:', jsonrpc);
+      return res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32600, message: 'Invalid Request: Unsupported jsonrpc version' },
+        id
+      });
+    }
+
+    if (!method) {
+      console.log('Error: Missing method');
+      return res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32601, message: 'Method not found: Missing method parameter' },
         id
       });
     }
@@ -109,6 +133,7 @@ app.post('/mcp', async (req: any, res: any) => {
         });
 
       case 'tools/list':
+        console.log('Handling tools/list request');
         // Return available tools
         return res.json({
           jsonrpc: '2.0',
@@ -364,9 +389,10 @@ app.post('/mcp', async (req: any, res: any) => {
         }
 
       default:
+        console.log('Error: Unknown method:', method);
         return res.status(400).json({
           jsonrpc: '2.0',
-          error: { code: -32601, message: 'Method not found' },
+          error: { code: -32601, message: `Method not found: ${method}` },
           id
         });
     }
