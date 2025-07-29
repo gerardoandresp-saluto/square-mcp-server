@@ -247,7 +247,7 @@ app.post('/mcp', async (req: any, res: any) => {
               const serviceEndpoints: { [key: string]: string } = {
                 'locations': '/v2/locations',
                 'customers': '/v2/customers',
-                'catalog': '/v2/catalog',
+                'catalog': '/v2/catalog/list', // FIXED: Use correct catalog list endpoint
                 'payments': '/v2/payments',
                 'orders': '/v2/orders',
                 'inventory': '/v2/inventory',
@@ -273,7 +273,20 @@ app.post('/mcp', async (req: any, res: any) => {
                 throw new Error(`Unsupported service: ${service}. Available services: ${Object.keys(serviceEndpoints).join(', ')}`);
               }
               
-              const url = `${baseUrl}${endpoint}`;
+              let url = `${baseUrl}${endpoint}`;
+              
+              // Handle query parameters for GET requests
+              if (method.toLowerCase() === 'list' && request && Object.keys(request).length > 0) {
+                const queryParams = new URLSearchParams();
+                Object.entries(request).forEach(([key, value]) => {
+                  if (value !== undefined && value !== null) {
+                    queryParams.append(key, String(value));
+                  }
+                });
+                if (queryParams.toString()) {
+                  url += `?${queryParams.toString()}`;
+                }
+              }
               
               // Map common methods to correct HTTP methods for Square API
               const methodMap: { [key: string]: string } = {
